@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --primary: #3755c3;
+    --primary-dim: #2848b7;
+    --background: #f7f9fb;
+    --surface-low: #f0f4f7;
+    --surface-lowest: #ffffff;
+    --on-surface: #2a3439;
+    --on-surface-variant: #566166;
+    --secondary: #006d4a;
+    --error-container: #fe8983;
+    --outline-variant: #a9b4b9;
+    --shadow-cloud: 0 20px 40px rgba(42, 52, 57, 0.06);
+    --glass-bg: rgba(255, 255, 255, 0.8);
+  }
+
+  .dark {
+    --primary: #5c7cfa;
+    --primary-dim: #4c6ef5;
+    --background: #0f1115;
+    --surface-low: #1c212b;
+    --surface-lowest: #141820;
+    --on-surface: #f1f5f9;
+    --on-surface-variant: #8b9bb4;
+    --secondary: #059669;
+    --error-container: #ef4444;
+    --outline-variant: #1e293b;
+    --shadow-cloud: 0 20px 40px rgba(0, 0, 0, 0.6);
+    --glass-bg: rgba(20, 24, 32, 0.8);
+  }
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-dim: var(--primary-dim);
+  --color-background: var(--background);
+  --color-surface-low: var(--surface-low);
+  --color-surface-lowest: var(--surface-lowest);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-secondary: var(--secondary);
+  --color-error-container: var(--error-container);
+  --color-outline-variant: var(--outline-variant);
+
+  --font-inter: "Inter", system-ui, sans-serif;
+
+  --radius-md: 12px;
+  --radius-xl: 24px;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global Transition for Smooth Theme Switching */
+*, ::before, ::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 400ms;
+}
+
+.glass {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(20px);
+}
+
+.glass-card {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-cloud);
+  border-radius: var(--radius-md);
+}
+
+.no-border {
+  border: none !important;
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dim) 100%);
+}
+
+/* Custom Utility to hide scrollbar while preserving scroll functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
