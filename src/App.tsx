@@ -9,6 +9,7 @@ import { HabitForm } from './components/habits/HabitForm';
 import { useHabitStore } from './store/useHabitStore';
 import { supabase } from './lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { useNotifications } from './hooks/useNotifications';
 
 function App() {
   const currentView = useHabitStore((state) => state.currentView);
@@ -20,6 +21,8 @@ function App() {
   const [session, setSession] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  useNotifications();
 
   useEffect(() => {
     // Initial Session Check

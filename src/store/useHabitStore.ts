@@ -9,6 +9,7 @@ export interface Habit {
   color: string;
   icon: string;
   completedDays: string[];
+  reminder_time?: string;
   createdAt: string;
 }
 
@@ -67,6 +68,7 @@ export const useHabitStore = create<HabitStore>()(
               color: h.color,
               icon: h.icon,
               completedDays: comps,
+              reminder_time: h.reminder_time,
               createdAt: h.created_at,
             };
           });
@@ -87,6 +89,7 @@ export const useHabitStore = create<HabitStore>()(
           name: habit.name,
           color: habit.color,
           icon: habit.icon,
+          reminder_time: habit.reminder_time,
           created_at: new Date().toISOString(),
         };
 
@@ -98,6 +101,7 @@ export const useHabitStore = create<HabitStore>()(
             color: newHabit.color,
             icon: newHabit.icon,
             completedDays: [],
+            reminder_time: newHabit.reminder_time,
             createdAt: newHabit.created_at 
           }],
         }));
@@ -117,6 +121,7 @@ export const useHabitStore = create<HabitStore>()(
         if (updates.name) updatePayload.name = updates.name;
         if (updates.color) updatePayload.color = updates.color;
         if (updates.icon) updatePayload.icon = updates.icon;
+        if (updates.reminder_time !== undefined) updatePayload.reminder_time = updates.reminder_time;
         
         if (Object.keys(updatePayload).length > 0) {
           await supabase.from('habits').update(updatePayload).eq('id', id);
