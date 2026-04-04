@@ -54,32 +54,32 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habitId }) => {
 
   return (
     <>
-      <div className="group glass-card border border-outline-variant/10 p-6 flex items-center justify-between transition-all duration-300 hover:scale-[1.02] hover:bg-surface-lowest/90 relative">
-        <div className="flex items-center gap-5">
+      <div className="group glass-card border border-outline-variant/10 p-4 sm:p-6 flex items-center justify-between transition-all duration-300 hover:scale-[1.02] hover:bg-surface-lowest/90 relative">
+        <div className="flex items-center gap-3 sm:gap-5 flex-1 min-w-0">
           {/* Progress Ring / Toggle Button */}
           <button
             onClick={() => toggleHabit(habit.id, todayStr)}
-            className="relative flex items-center justify-center"
+            className="relative flex items-center justify-center shrink-0"
           >
             <ProgressRing 
               progress={isCompletedToday ? 1 : 0} 
-              size={56} 
-              strokeWidth={4} 
+              size={48} 
+              strokeWidth={3.5} 
             />
             <div className={cn(
-              "absolute inset-0 m-2 rounded-full flex items-center justify-center transition-all duration-300",
+              "absolute inset-0 m-1.5 rounded-full flex items-center justify-center transition-all duration-300",
               isCompletedToday 
                 ? "bg-secondary text-white scale-100 shadow-lg shadow-secondary/20" 
                 : "bg-surface-low text-on-surface-variant group-hover:bg-surface-lowest scale-90"
             )}>
-              <Check size={20} className={cn("transition-transform", isCompletedToday ? "scale-100" : "scale-0")} />
+              <Check size={16} className={cn("transition-transform", isCompletedToday ? "scale-100" : "scale-0")} />
             </div>
           </button>
 
-          <div>
-            <h3 className="font-semibold text-lg text-on-surface leading-tight">{habit.name}</h3>
-            <p className="text-sm text-on-surface-variant flex items-center gap-1.5 mt-1">
-              <Flame size={14} className={cn("transition-colors", streak > 0 ? "text-orange-500 fill-orange-500" : "text-on-surface-variant")} />
+          <div className="min-w-0">
+            <h3 className="font-semibold text-base sm:text-lg text-on-surface leading-tight truncate">{habit.name}</h3>
+            <p className="text-[10px] sm:text-sm text-on-surface-variant flex items-center gap-1.5 mt-0.5 sm:mt-1">
+              <Flame size={12} className={cn("sm:w-3.5 sm:h-3.5 transition-colors", streak > 0 ? "text-orange-500 fill-orange-500" : "text-on-surface-variant")} />
               <span className={cn(streak > 0 ? "text-on-surface font-medium" : "")}>
                 {streak} day streak
               </span>

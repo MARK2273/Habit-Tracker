@@ -59,9 +59,9 @@ export const StatisticsView: React.FC = () => {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <header className="mb-12">
-        <h2 className="text-4xl font-bold text-on-surface tracking-tight mb-2">Statistics</h2>
-        <p className="text-on-surface-variant text-lg">Measure your momentum and track your sanctuary's growth.</p>
+      <header className="mb-8 sm:mb-12">
+        <h2 className="text-2xl sm:text-4xl font-bold text-on-surface tracking-tight mb-2">Statistics</h2>
+        <p className="text-on-surface-variant text-base sm:text-lg">Measure your momentum and track your sanctuary's growth.</p>
       </header>
 
       {habits.length === 0 ? (
@@ -70,7 +70,7 @@ export const StatisticsView: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
             <StatCard 
               title="Total Completions" 
               value={stats.totalCompletions} 
@@ -98,8 +98,8 @@ export const StatisticsView: React.FC = () => {
           </div>
 
           {/* Simple Visual Bar Chart representing completion counts per habit */}
-          <div className="glass-card border border-outline-variant/10 p-6 pt-8">
-            <h3 className="text-lg font-semibold text-on-surface mb-6">Completions by Ritual</h3>
+          <div className="glass-card border border-outline-variant/10 p-4 sm:p-6 pt-6 sm:pt-8">
+            <h3 className="text-base sm:text-lg font-semibold text-on-surface mb-4 sm:mb-6">Completions by Ritual</h3>
             <div className="space-y-6">
               {habits.map(habit => {
                 const maxCompletions = Math.max(...habits.map(h => h.completedDays.length), 1);
