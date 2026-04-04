@@ -9,6 +9,7 @@ export interface Habit {
   color: string;
   icon: string;
   completedDays: string[];
+  createdAt?: string;
 }
 
 export type ViewType = 'dashboard' | 'calendar' | 'statistics' | 'settings';
@@ -121,8 +122,6 @@ export const useHabitStore = create<HabitStore>()(
       },
 
       clearHabits: async () => {
-        const habits = get().habits;
-        
         // Optimistic UI Update (clear completed days only)
         set((state) => ({
           habits: state.habits.map((habit) => ({ ...habit, completedDays: [] })),

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { DashboardView } from './components/pages/DashboardView';
 import { CalendarView } from './components/pages/CalendarView';

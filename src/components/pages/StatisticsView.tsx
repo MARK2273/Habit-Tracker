@@ -10,7 +10,7 @@ export const StatisticsView: React.FC = () => {
   const stats = useMemo(() => {
     let totalCompletions = 0;
     let longestStreak = 0;
-    let bestHabitObj = null;
+    let bestHabitObj: any = null;
 
     habits.forEach(habit => {
       totalCompletions += habit.completedDays.length;
