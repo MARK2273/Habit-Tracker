@@ -9,7 +9,7 @@ export interface Habit {
   color: string;
   icon: string;
   completedDays: string[];
-  createdAt?: string;
+  createdAt: string;
 }
 
 export type ViewType = 'dashboard' | 'calendar' | 'statistics' | 'settings';
@@ -24,7 +24,7 @@ interface HabitStore {
   setView: (view: ViewType) => void;
   
   fetchHabits: () => Promise<void>;
-  addHabit: (habit: Omit<Habit, 'id' | 'completedDays'>) => Promise<void>;
+  addHabit: (habit: Omit<Habit, 'id' | 'completedDays' | 'createdAt'>) => Promise<void>;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
   removeHabit: (id: string) => Promise<void>;
   toggleHabit: (id: string, date: string) => Promise<void>;
@@ -66,6 +66,7 @@ export const useHabitStore = create<HabitStore>()(
               color: h.color,
               icon: h.icon,
               completedDays: comps,
+              createdAt: h.created_at,
             };
           });
           set({ habits: formattedHabits, isLoading: false });
@@ -85,11 +86,19 @@ export const useHabitStore = create<HabitStore>()(
           name: habit.name,
           color: habit.color,
           icon: habit.icon,
+          created_at: new Date().toISOString(),
         };
 
         // Optimistic UI Update
         set((state) => ({
-          habits: [...state.habits, { ...newHabit, completedDays: [] }],
+          habits: [...state.habits, { 
+            id: newHabit.id,
+            name: newHabit.name,
+            color: newHabit.color,
+            icon: newHabit.icon,
+            completedDays: [],
+            createdAt: newHabit.created_at 
+          }],
         }));
 
         // DB Sync

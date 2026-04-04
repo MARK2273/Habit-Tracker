@@ -28,6 +28,7 @@ export const StatisticsView: React.FC = () => {
 
     // A rough completion rate calculation over the last 30 days would be better, but simple global rate:
     const totalPossibleDays = habits.reduce((acc, habit) => {
+      // Ensure we have a valid date string
       const daysSinceCreation = Math.max(1, differenceInDays(new Date(), new Date(habit.createdAt)) + 1);
       return acc + daysSinceCreation;
     }, 0);
