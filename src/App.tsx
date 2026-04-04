@@ -14,6 +14,7 @@ function App() {
   const currentView = useHabitStore((state) => state.currentView);
   const theme = useHabitStore((state) => state.theme);
   const fetchHabits = useHabitStore((state) => state.fetchHabits);
+  const subscribeToHabits = useHabitStore((state) => state.subscribeToHabits);
   const isLoading = useHabitStore((state) => state.isLoading);
   
   const [session, setSession] = useState<any>(null);
@@ -42,6 +43,16 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, [fetchHabits]);
+
+  // Real-time Subscription
+  useEffect(() => {
+    if (!session) return;
+    
+    const unsubscribe = subscribeToHabits();
+    return () => {
+      unsubscribe();
+    };
+  }, [session, subscribeToHabits]);
 
   // Theme Sync
   useEffect(() => {

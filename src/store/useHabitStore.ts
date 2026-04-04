@@ -29,6 +29,7 @@ interface HabitStore {
   removeHabit: (id: string) => Promise<void>;
   toggleHabit: (id: string, date: string) => Promise<void>;
   clearHabits: () => Promise<void>;
+  subscribeToHabits: () => (() => void);
   
   getHabitStreak: (habitId: string) => number;
 }
@@ -210,6 +211,38 @@ export const useHabitStore = create<HabitStore>()(
         }
 
         return streak;
+      },
+
+      subscribeToHabits: () => {
+        const channel = supabase
+          .channel('habits_realtime')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'habits',
+            },
+            () => {
+              get().fetchHabits();
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'habit_completions',
+            },
+            () => {
+              get().fetchHabits();
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
       },
     }),
     {
