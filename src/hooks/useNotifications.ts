@@ -9,18 +9,44 @@ export const useNotifications = () => {
 
   const requestPermission = useCallback(async () => {
     if (!('Notification' in window)) return;
-    
+
     if (Notification.permission === 'default') {
-      await Notification.requestPermission();
+      try {
+        await Notification.requestPermission();
+      } catch (err) {
+        console.error('Error requesting notification permission:', err);
+      }
     }
   }, []);
 
-  const sendNotification = useCallback((title: string, body: string) => {
+  const sendNotification = useCallback(async (title: string, body: string) => {
+
     if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/favicon.svg',
-      });
+
+      // Use Service Worker for better background support on mobile
+      // Only use Service Worker if it's currently controlling the page
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          registration.showNotification(title, {
+            body,
+            icon: '/pwa-192x192.png',
+            badge: '/favicon.svg',
+            vibrate: [200, 100, 200],
+            tag: 'habit-reminder',
+            renotify: true
+          } as NotificationOptions);
+          console.log('Notification sent via Service Worker');
+        } catch (err) {
+          console.error('Service worker notification failed:', err);
+        }
+      } else {
+        // Fallback for browsers without active service workers (common in dev mode)
+        new Notification(title, {
+          body,
+          icon: '/pwa-192x192.png',
+        });
+      }
     }
   }, []);
 
@@ -35,7 +61,7 @@ export const useNotifications = () => {
       // Check if we are at one of the scheduled times
       if (NOTIFICATION_SCHEDULE.includes(currentTime)) {
         const incompleteHabits = habits.filter(h => !h.completedDays.includes(today));
-        
+
         if (incompleteHabits.length > 0) {
           const slotKey = `last_notified_slot_${currentTime}_${today}`;
           const lastNotified = localStorage.getItem(slotKey);
@@ -43,7 +69,7 @@ export const useNotifications = () => {
           if (!lastNotified) {
             const habitCount = incompleteHabits.length;
             const title = habitCount === 1 ? 'Habit Reminder! ⚡' : 'Yearly ToDo Reminder! 🚀';
-            const body = habitCount === 1 
+            const body = habitCount === 1
               ? `You still need to: ${incompleteHabits[0].name}`
               : `You have ${habitCount} habits to complete today!`;
 
@@ -52,8 +78,10 @@ export const useNotifications = () => {
           }
         }
       }
-    }, 45000); // Check every 45 seconds
+    }, 45000);
 
     return () => clearInterval(interval);
   }, [habits, requestPermission, sendNotification]);
 };
+
+
