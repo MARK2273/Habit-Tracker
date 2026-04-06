@@ -25,8 +25,13 @@ function App() {
   useNotifications();
 
   useEffect(() => {
-    // Initial Session Check
+    // Initial Session Check with a timeout safety net
+    const timeoutId = setTimeout(() => {
+      setIsInitializing(false);
+    }, 5000); // 5 second timeout for auth check
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeoutId);
       setSession(session);
       setIsInitializing(false);
       if (session) fetchHabits();
@@ -35,16 +40,19 @@ function App() {
     // Listen for Auth Changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (session) {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         fetchHabits();
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         useHabitStore.setState({ habits: [] });
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, [fetchHabits]);
 
   // Real-time Subscription

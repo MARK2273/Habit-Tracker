@@ -48,138 +48,204 @@ export const useHabitStore = create<HabitStore>()(
 
       fetchHabits: async () => {
         set({ isLoading: true });
-        const { data: session } = await supabase.auth.getSession();
-        if (!session.session?.user) {
-          set({ habits: [], isLoading: false });
-          return;
-        }
+        try {
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError || !session?.user) {
+            set({ habits: [], isLoading: false });
+            return;
+          }
 
-        const { data: habitsData } = await supabase.from('habits').select('*');
-        const { data: completionsData } = await supabase.from('habit_completions').select('*');
+          const { data: habitsData, error: habitsError } = await supabase.from('habits').select('*');
+          const { data: completionsData, error: completionsError } = await supabase.from('habit_completions').select('*');
 
-        if (habitsData) {
-          const formattedHabits: Habit[] = habitsData.map((h: any) => {
-            const comps = completionsData
-              ?.filter((c: any) => c.habit_id === h.id)
-              .map((c: any) => c.date) || [];
-            return {
-              id: h.id,
-              name: h.name,
-              color: h.color,
-              icon: h.icon,
-              completedDays: comps,
-              reminder_time: h.reminder_time,
-              createdAt: h.created_at,
-            };
-          });
-          set({ habits: formattedHabits, isLoading: false });
-        } else {
+          if (habitsError || completionsError) {
+            console.error('Error fetching habits or completions:', habitsError || completionsError);
+            set({ isLoading: false });
+            return;
+          }
+
+          if (habitsData) {
+            const formattedHabits: Habit[] = habitsData.map((h: any) => {
+              const comps = completionsData
+                ?.filter((c: any) => c.habit_id === h.id)
+                .map((c: any) => c.date) || [];
+              return {
+                id: h.id,
+                name: h.name,
+                color: h.color,
+                icon: h.icon,
+                completedDays: comps,
+                reminder_time: h.reminder_time,
+                createdAt: h.created_at,
+              };
+            });
+            set({ habits: formattedHabits, isLoading: false });
+          } else {
+            set({ isLoading: false });
+          }
+        } catch (error) {
+          console.error('Unexpected error in fetchHabits:', error);
           set({ isLoading: false });
         }
       },
 
       addHabit: async (habit) => {
-        const { data: session } = await supabase.auth.getSession();
-        const user = session.session?.user;
-        if (!user) return;
+        try {
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          const user = session?.user;
+          if (sessionError || !user) {
+            console.error('Session error or no user found:', sessionError);
+            return;
+          }
 
-        const newHabit = {
-          id: Math.random().toString(36).substring(2, 9),
-          user_id: user.id,
-          name: habit.name,
-          color: habit.color,
-          icon: habit.icon,
-          reminder_time: habit.reminder_time,
-          created_at: new Date().toISOString(),
-        };
+          const newHabit = {
+            id: Math.random().toString(36).substring(2, 9),
+            user_id: user.id,
+            name: habit.name,
+            color: habit.color,
+            icon: habit.icon,
+            reminder_time: habit.reminder_time,
+            created_at: new Date().toISOString(),
+          };
 
-        // Optimistic UI Update
-        set((state) => ({
-          habits: [...state.habits, { 
-            id: newHabit.id,
-            name: newHabit.name,
-            color: newHabit.color,
-            icon: newHabit.icon,
-            completedDays: [],
-            reminder_time: newHabit.reminder_time,
-            createdAt: newHabit.created_at 
-          }],
-        }));
+          // Optimistic UI Update
+          set((state) => ({
+            habits: [...state.habits, { 
+              id: newHabit.id,
+              name: newHabit.name,
+              color: newHabit.color,
+              icon: newHabit.icon,
+              completedDays: [],
+              reminder_time: newHabit.reminder_time,
+              createdAt: newHabit.created_at 
+            }],
+          }));
 
-        // DB Sync
-        await supabase.from('habits').insert([newHabit]);
+          // DB Sync
+          const { error } = await supabase.from('habits').insert([newHabit]);
+          if (error) {
+            console.error('Error adding habit to DB:', error);
+            // Optionally rollback optimistic update here
+            get().fetchHabits(); 
+          }
+        } catch (error) {
+          console.error('Unexpected error in addHabit:', error);
+        }
       },
 
       updateHabit: async (id, updates) => {
-        // Optimistic UI Update
-        set((state) => ({
-          habits: state.habits.map((h) => (h.id === id ? { ...h, ...updates } : h)),
-        }));
+        try {
+          // Optimistic UI Update
+          set((state) => ({
+            habits: state.habits.map((h) => (h.id === id ? { ...h, ...updates } : h)),
+          }));
 
-        // DB Sync (pick only allowed fields)
-        const updatePayload: any = {};
-        if (updates.name) updatePayload.name = updates.name;
-        if (updates.color) updatePayload.color = updates.color;
-        if (updates.icon) updatePayload.icon = updates.icon;
-        if (updates.reminder_time !== undefined) updatePayload.reminder_time = updates.reminder_time;
-        
-        if (Object.keys(updatePayload).length > 0) {
-          await supabase.from('habits').update(updatePayload).eq('id', id);
+          // DB Sync (pick only allowed fields)
+          const updatePayload: any = {};
+          if (updates.name) updatePayload.name = updates.name;
+          if (updates.color) updatePayload.color = updates.color;
+          if (updates.icon) updatePayload.icon = updates.icon;
+          if (updates.reminder_time !== undefined) updatePayload.reminder_time = updates.reminder_time;
+          
+          if (Object.keys(updatePayload).length > 0) {
+            const { error } = await supabase.from('habits').update(updatePayload).eq('id', id);
+            if (error) {
+              console.error('Error updating habit in DB:', error);
+              get().fetchHabits();
+            }
+          }
+        } catch (error) {
+          console.error('Unexpected error in updateHabit:', error);
         }
       },
 
       removeHabit: async (id) => {
-        // Optimistic UI Update
-        set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
-        
-        // DB Sync
-        await supabase.from('habits').delete().eq('id', id);
+        try {
+          // Optimistic UI Update
+          set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
+          
+          // DB Sync
+          const { error } = await supabase.from('habits').delete().eq('id', id);
+          if (error) {
+            console.error('Error removing habit from DB:', error);
+            get().fetchHabits();
+          }
+        } catch (error) {
+          console.error('Unexpected error in removeHabit:', error);
+        }
       },
 
       clearHabits: async () => {
-        // Optimistic UI Update (clear completed days only)
-        set((state) => ({
-          habits: state.habits.map((habit) => ({ ...habit, completedDays: [] })),
-        }));
+        try {
+          // Optimistic UI Update (clear completed days only)
+          set((state) => ({
+            habits: state.habits.map((habit) => ({ ...habit, completedDays: [] })),
+          }));
 
-        // DB Sync: Delete all completion records for this user (handled by RLS automatically if generic delete)
-        const { data: session } = await supabase.auth.getSession();
-        if (session.session?.user) {
-          await supabase.from('habit_completions').delete().eq('user_id', session.session.user.id);
+          // DB Sync: Delete all completion records for this user
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          if (session?.user) {
+            const { error } = await supabase.from('habit_completions').delete().eq('user_id', session.user.id);
+            if (error) {
+              console.error('Error clearing completions from DB:', error);
+              get().fetchHabits();
+            }
+          } else if (sessionError) {
+            console.error('Session error in clearHabits:', sessionError);
+          }
+        } catch (error) {
+          console.error('Unexpected error in clearHabits:', error);
         }
       },
 
       toggleHabit: async (id, date) => {
-        const habit = get().habits.find((h) => h.id === id);
-        if (!habit) return;
+        try {
+          const habit = get().habits.find((h) => h.id === id);
+          if (!habit) return;
 
-        const isCompleted = habit.completedDays.includes(date);
-        
-        // Optimistic UI Update
-        set((state) => ({
-          habits: state.habits.map((h) => {
-            if (h.id === id) {
-              const newDays = isCompleted
-                ? h.completedDays.filter((d) => d !== date)
-                : [...h.completedDays, date];
-              return { ...h, completedDays: newDays };
+          const isCompleted = habit.completedDays.includes(date);
+          
+          // Optimistic UI Update
+          set((state) => ({
+            habits: state.habits.map((h) => {
+              if (h.id === id) {
+                const newDays = isCompleted
+                  ? h.completedDays.filter((d) => d !== date)
+                  : [...h.completedDays, date];
+                return { ...h, completedDays: newDays };
+              }
+              return h;
+            }),
+          }));
+
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          const user = session?.user;
+          if (sessionError || !user) {
+            console.error('Session error or no user found:', sessionError);
+            get().fetchHabits();
+            return;
+          }
+
+          // DB Sync
+          if (isCompleted) {
+            const { error } = await supabase.from('habit_completions').delete()
+              .match({ habit_id: id, date: date, user_id: user.id });
+            if (error) {
+              console.error('Error deleting completion:', error);
+              get().fetchHabits();
             }
-            return h;
-          }),
-        }));
-
-        const { data: session } = await supabase.auth.getSession();
-        const user = session.session?.user;
-        if (!user) return;
-
-        // DB Sync
-        if (isCompleted) {
-          await supabase.from('habit_completions').delete()
-            .match({ habit_id: id, date: date, user_id: user.id });
-        } else {
-          await supabase.from('habit_completions').insert([
-            { habit_id: id, date: date, user_id: user.id }
-          ]);
+          } else {
+            const { error } = await supabase.from('habit_completions').insert([
+              { habit_id: id, date: date, user_id: user.id }
+            ]);
+            if (error) {
+              console.error('Error adding completion:', error);
+              get().fetchHabits();
+            }
+          }
+        } catch (error) {
+          console.error('Unexpected error in toggleHabit:', error);
         }
       },
 
