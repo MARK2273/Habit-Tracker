@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Info } from 'lucide-react';
+import { runDiagnostics } from '../../lib/diagnostic';
 
 export const AuthView: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,20 +19,46 @@ export const AuthView: React.FC = () => {
       const cleanEmail = email.trim();
       
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error, data } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
         });
-        if (error) throw error;
+        
+        if (error) {
+          console.error('[Supabase Auth Error]:', {
+            message: error.message,
+            status: error.status,
+            name: error.name,
+            context: 'signInWithPassword'
+          });
+          throw error;
+        }
+        
+        console.log('[Supabase Auth Success]:', data.user?.id);
       } else {
         const { error } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
         });
-        if (error) throw error;
+        
+        if (error) {
+          console.error('[Supabase Auth Error]:', {
+            message: error.message,
+            status: error.status,
+            name: error.name,
+            context: 'signUp'
+          });
+          throw error;
+        }
+        
+        console.log('[Supabase Auth Success]: Verification email sent to', cleanEmail);
       }
     } catch (err: any) {
-      setError(err.message);
+      const detail = err.message === 'Failed to fetch' 
+        ? 'Network Error: Check your internet connection or ad-blockers. Supabase might be unreachable.'
+        : err.message;
+      setError(detail);
+      console.error('[Auth Exception]:', err);
     } finally {
       setLoading(false);
     }
@@ -105,6 +132,19 @@ export const AuthView: React.FC = () => {
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-outline-variant/10">
+            <button
+              onClick={runDiagnostics}
+              className="w-full py-2 px-4 flex items-center justify-center gap-2 text-xs font-medium text-on-surface-variant hover:text-primary transition-all rounded-lg border border-transparent hover:border-primary/20 bg-surface-lowest/50"
+            >
+              <Info size={14} />
+              Run Connectivity Diagnostics
+            </button>
+            <p className="text-[10px] text-on-surface-variant/60 mt-2 text-center">
+              Having trouble connecting? Run diagnostics to check your link to Supabase.
+            </p>
           </div>
         </div>
       </div>
