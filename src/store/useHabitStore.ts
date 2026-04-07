@@ -268,7 +268,7 @@ export const useHabitStore = create<HabitStore>()(
           currentDate = subDays(currentDate, 1);
         } else if (habit.completedDays.includes(yesterdayStr)) {
           streak = 1;
-          currentDate = subDays(currentDate, 1);
+          currentDate = subDays(currentDate, 2);
         }
 
         while (true) {
