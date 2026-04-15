@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useHabitStore } from '../../store/useHabitStore';
+import { HabitNoteModal } from '../habits/HabitNoteModal';
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameMonth, subMonths, addMonths, startOfYear, endOfYear, getDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, LayoutGrid, Table2, Calendar as CalendarIcon } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -13,6 +14,7 @@ type DisplayMode = 'cards' | 'matrix' | 'heatmap';
 
 export const CalendarView: React.FC = () => {
   const habits = useHabitStore((state) => state.habits);
+  const [selectedNote, setSelectedNote] = useState<{ habitId: string; date: string } | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [displayMode, setDisplayMode] = useState<DisplayMode>('matrix');
 
@@ -122,6 +124,8 @@ export const CalendarView: React.FC = () => {
                   const dayStr = format(day, 'yyyy-MM-dd');
                   const isCompleted = habit.completedDays.includes(dayStr);
                   const isToday = dayStr === format(new Date(), 'yyyy-MM-dd');
+                  const hasNote = Boolean(habit.notes && habit.notes[dayStr]);
+                  // Using hasNote below
 
                   return (
                     <div 
@@ -134,6 +138,9 @@ export const CalendarView: React.FC = () => {
                       )}
                     >
                       {format(day, 'd')}
+                      {hasNote && (
+                        <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_4px_rgba(var(--primary),0.5)]" />
+                      )}
                     </div>
                   );
                 })}
@@ -177,8 +184,13 @@ export const CalendarView: React.FC = () => {
                         {daysInMonth.map((day) => {
                           const dayStr = format(day, 'yyyy-MM-dd');
                           const isCompleted = habit.completedDays.includes(dayStr);
+                          const hasNoteMatrix = Boolean(habit.notes && habit.notes[dayStr]);
                           return (
-                            <td key={day.toISOString()} className="p-1.5 sm:p-2 border-b border-outline-variant/5">
+                            <td
+                              key={day.toISOString()}
+                              className="p-1.5 sm:p-2 border-b border-outline-variant/5 cursor-pointer hover:bg-surface-low"
+                              onClick={() => setSelectedNote({ habitId: habit.id, date: dayStr })}
+                            >
                               <div className="flex items-center justify-center w-full h-full relative">
                                 <div className={cn(
                                   "w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center transition-all",
@@ -187,6 +199,9 @@ export const CalendarView: React.FC = () => {
                                   {isCompleted && <span className="text-[8px] sm:text-[10px]">✓</span>}
                                 </div>
                                 {!isCompleted && <div className="w-1 h-1 sm:w-2 sm:h-2 rounded-full bg-surface-low/60" />}
+                                {hasNoteMatrix && (
+                                  <div className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                                )}
                               </div>
                             </td>
                           );
@@ -228,16 +243,21 @@ export const CalendarView: React.FC = () => {
                   {yearlyDays.map((day) => {
                     const dayStr = format(day, 'yyyy-MM-dd');
                     const completions = habits.filter(h => h.completedDays.includes(dayStr)).length;
+                    const hasNoteHeatmap = habits.some(h => h.notes && h.notes[dayStr]);
                     
                     return (
                       <div 
                         key={dayStr}
                         title={`${format(day, 'MMMM do, yyyy')}: ${completions} completions`}
                         className={cn(
-                          "w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-[2px] sm:rounded-[3px] transition-colors hover:ring-2 ring-primary ring-offset-1 cursor-crosshair",
+                          "relative w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-[2px] sm:rounded-[3px] transition-colors hover:ring-2 ring-primary ring-offset-1 cursor-crosshair",
                           getHeatmapColor(completions)
                         )}
-                      />
+                      >
+                        {hasNoteHeatmap && (
+                          <div className="absolute top-0 right-0 w-1 h-1 rounded-full bg-primary" />
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -256,6 +276,13 @@ export const CalendarView: React.FC = () => {
           )}
 
         </div>
+      )}
+      {selectedNote && (
+        <HabitNoteModal
+          habitId={selectedNote.habitId}
+          date={selectedNote.date}
+          onClose={() => setSelectedNote(null)}
+        />
       )}
     </div>
   );

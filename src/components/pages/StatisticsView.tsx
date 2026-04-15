@@ -3,6 +3,17 @@ import { useHabitStore } from '../../store/useHabitStore';
 import { Trophy, Target, Zap, Activity } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 
+const StatCard = ({ title, value, icon: Icon, subtitle }: any) => (
+  <div className="glass-card border border-outline-variant/10 p-6 flex flex-col items-center text-center justify-center min-h-[160px]">
+    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
+      <Icon size={24} />
+    </div>
+    <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-1">{title}</h3>
+    <p className="text-3xl font-bold text-on-surface mb-1">{value}</p>
+    {subtitle && <p className="text-xs text-on-surface-variant">{subtitle}</p>}
+  </div>
+);
+
 export const StatisticsView: React.FC = () => {
   const habits = useHabitStore((state) => state.habits);
   const getHabitStreak = useHabitStore((state) => state.getHabitStreak);
@@ -46,16 +57,7 @@ export const StatisticsView: React.FC = () => {
     };
   }, [habits, getHabitStreak]);
 
-  const StatCard = ({ title, value, icon: Icon, subtitle }: any) => (
-    <div className="glass-card border border-outline-variant/10 p-6 flex flex-col items-center text-center justify-center min-h-[160px]">
-      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
-        <Icon size={24} />
-      </div>
-      <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-1">{title}</h3>
-      <p className="text-3xl font-bold text-on-surface mb-1">{value}</p>
-      {subtitle && <p className="text-xs text-on-surface-variant">{subtitle}</p>}
-    </div>
-  );
+
 
   return (
     <div className="animate-in fade-in duration-500">
