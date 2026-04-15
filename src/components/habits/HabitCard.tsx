@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Check, Flame, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
+import { Check, Flame, MoreHorizontal, Edit2, Trash2, MessageSquare } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useHabitStore } from '../../store/useHabitStore';
 import { ProgressRing } from './ProgressRing';
 import { format } from 'date-fns';
 import { HabitForm } from './HabitForm';
+import { HabitNoteModal } from './HabitNoteModal';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -23,6 +24,7 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habitId }) => {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -42,6 +44,7 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habitId }) => {
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const isCompletedToday = habit.completedDays.includes(todayStr);
+  const hasNoteToday = Boolean(habit.notes && habit.notes[todayStr]);
 
   const handleDelete = () => {
     if (!isConfirmingDelete) {
@@ -88,6 +91,18 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habitId }) => {
         </div>
 
         <div className="flex items-center gap-3 relative" ref={menuRef}>
+          <button
+            onClick={() => setIsNoteModalOpen(true)}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              hasNoteToday
+                ? "text-primary bg-primary/10 hover:bg-primary/20"
+                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-low"
+            )}
+            title="Add/View Note for Today"
+          >
+            <MessageSquare size={18} className={hasNoteToday ? "fill-primary/20" : ""} />
+          </button>
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-low rounded-full transition-colors"
@@ -123,6 +138,9 @@ export const HabitCard: React.FC<HabitCardProps> = ({ habitId }) => {
 
       {isEditing && (
         <HabitForm editHabitId={habit.id} onClose={() => setIsEditing(false)} />
+      )}
+      {isNoteModalOpen && (
+        <HabitNoteModal habitId={habit.id} date={todayStr} onClose={() => setIsNoteModalOpen(false)} />
       )}
     </>
   );

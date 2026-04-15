@@ -9,6 +9,7 @@ export interface Habit {
   color: string;
   icon: string;
   completedDays: string[];
+  notes?: Record<string, string>;
   reminder_time?: string;
   createdAt: string;
 }
@@ -31,6 +32,7 @@ interface HabitStore {
   toggleHabit: (id: string, date: string) => Promise<void>;
   clearHabits: () => Promise<void>;
   subscribeToHabits: () => (() => void);
+  setHabitNote: (id: string, date: string, note: string) => Promise<void>;
   
   getHabitStreak: (habitId: string) => number;
 }
@@ -58,9 +60,10 @@ export const useHabitStore = create<HabitStore>()(
 
           const { data: habitsData, error: habitsError } = await supabase.from('habits').select('*');
           const { data: completionsData, error: completionsError } = await supabase.from('habit_completions').select('*');
+          const { data: notesData, error: notesError } = await supabase.from('habit_notes').select('*');
 
-          if (habitsError || completionsError) {
-            console.error('Error fetching habits or completions:', habitsError || completionsError);
+          if (habitsError || completionsError || notesError) {
+            console.error('Error fetching habits, completions or notes:', habitsError || completionsError || notesError);
             set({ isLoading: false });
             return;
           }
@@ -70,12 +73,18 @@ export const useHabitStore = create<HabitStore>()(
               const comps = completionsData
                 ?.filter((c: any) => c.habit_id === h.id)
                 .map((c: any) => c.date) || [];
+              const notesRecords = notesData?.filter((n: any) => n.habit_id === h.id) || [];
+              const notes: Record<string, string> = {};
+              notesRecords.forEach((n: any) => {
+                notes[n.date] = n.note;
+              });
               return {
                 id: h.id,
                 name: h.name,
                 color: h.color,
                 icon: h.icon,
                 completedDays: comps,
+                notes,
                 reminder_time: h.reminder_time,
                 createdAt: h.created_at,
               };
@@ -117,6 +126,7 @@ export const useHabitStore = create<HabitStore>()(
               color: newHabit.color,
               icon: newHabit.icon,
               completedDays: [],
+              notes: {},
               reminder_time: newHabit.reminder_time,
               createdAt: newHabit.created_at 
             }],
@@ -249,6 +259,67 @@ export const useHabitStore = create<HabitStore>()(
         }
       },
 
+      setHabitNote: async (id, date, note) => {
+        try {
+          const habit = get().habits.find((h) => h.id === id);
+          if (!habit) return;
+
+          // Optimistic UI Update
+          set((state) => ({
+            habits: state.habits.map((h) => {
+              if (h.id === id) {
+                const newNotes = { ...(h.notes || {}) };
+                if (note.trim() === '') {
+                  delete newNotes[date];
+                } else {
+                  newNotes[date] = note;
+                }
+                return { ...h, notes: newNotes };
+              }
+              return h;
+            }),
+          }));
+
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          const user = session?.user;
+          if (sessionError || !user) {
+            console.error('Session error or no user found:', sessionError);
+            get().fetchHabits();
+            return;
+          }
+
+          if (note.trim() === '') {
+            const { error } = await supabase.from('habit_notes').delete()
+              .match({ habit_id: id, date: date, user_id: user.id });
+            if (error) {
+              console.error('Error deleting note:', error);
+              get().fetchHabits();
+            }
+          } else {
+            // Check if note exists
+            const existingNotes = habit.notes || {};
+            if (existingNotes[date]) {
+              const { error } = await supabase.from('habit_notes').update({ note })
+                .match({ habit_id: id, date: date, user_id: user.id });
+              if (error) {
+                console.error('Error updating note:', error);
+                get().fetchHabits();
+              }
+            } else {
+              const { error } = await supabase.from('habit_notes').insert([
+                { habit_id: id, date: date, user_id: user.id, note }
+              ]);
+              if (error) {
+                console.error('Error adding note:', error);
+                get().fetchHabits();
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Unexpected error in setHabitNote:', error);
+        }
+      },
+
       getHabitStreak: (habitId) => {
         const habit = get().habits.find((h) => h.id === habitId);
         if (!habit || habit.completedDays.length === 0) return 0;
@@ -304,6 +375,17 @@ export const useHabitStore = create<HabitStore>()(
               event: '*',
               schema: 'public',
               table: 'habit_completions',
+            },
+            () => {
+              get().fetchHabits();
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'habit_notes',
             },
             () => {
               get().fetchHabits();
